@@ -1,0 +1,35 @@
+This is the design of LSIndexing project for Super Computing.
+
+All the files would be present in a distributed filesystem. Every datasets would cotain a set of documents (could be URLs, books whatever) and be present in corpus folder inside its root folder. For instance when we work on Dataset-X, it would be present in /Dataset-X/Corpus/
+
+SCRIPT 1 : TermIndexer.java
+------------------------------
+* We have a set of documents and the first step is to prepare it for indexing for which we need to identify indexes for docuemnts and terms.
+The script will identify the complete list of all unique terms, assign them unique indexes and dump it to a file called /Dataset-X/Index/termIndex.dat.
+
+* EveryLine in the termIndex.dat file is of the form <term> <id>
+
+* Similarly all the documents in /Dataset-X/Corpus/ are assigned ids and dumped to /DataSet-X/Index/docIndex.dat
+
+SCRIPT 2 : TermDocIndexer.java
+------------------------------
+* This script is responsible for making the Term Document matrix. It will look for a config file called TermDocIndexer.conf in /Dataset-X/Config/ and make the matrix accordingly. The config file can support different types of matrices like incedence, frequency, TF-IDF
+
+* The final output is writtern to /Dataset-X/Index/TermDocIndex.dat where every line is of the form
+<docId> <f1> <f2> <f3> ............... <fn> where fi corresponds to the measure of term-i in the document be it incedence, term frequency or TF-IDF.
+
+SCRIPT 3 : LSIIndexer.java
+-----------------------------
+* This may have to split across multiple scripts. Basically TermDocIndex.dat is split into a set of clusters. The script expects a config file in /Dataset-X/Config/LSI.conf .As a result following files are produced in /Dataset-X/LSIndex/
+	- TermDocCluster1.dat, TermDocCluster2.dat................., TermDocClusterN.dat
+	- ClusterInfo.dat [ Contains info on number of clusters and their centers ]
+	- LSIMeta1.dat, LSIMeta2.dat.....................LSIMetaN.dat [ Contains Information about LSI for every cluster ]
+
+SCRIPT 4 : Query.java
+-----------------------------
+* A set of queries are input one per line. The system looks up for /DataSet-X/Config/SE.conf for certain options. 
+* For every query in the list, it sends it to 3 reducer depending on the closest 3 clusters for the query and then output is written to a file where a set of top-300 documents are written based on rank.
+* Output file is produced in /Dataset-X/Query/$query.dat [ searching for ajeesh gives output "/Dataset-X/Query/ajeesh.dat"]
+* SE.conf can have a lot of configuration options like if $query.dat is present and is not more than 5 mins old or say $DECAY_TIME old , don't recompute
+
+SUMMING UP, This is a decent search engine using hadoop. I'm not sure of how difficult it is to integrate a frontend to this.
