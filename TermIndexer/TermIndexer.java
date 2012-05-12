@@ -29,6 +29,8 @@
          */	
  	     public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
  	       String line = value.toString();
+	       line = line.replaceAll("[^a-zA-Z0-9]+"," ");
+	       line = line.toLowerCase();
  	       StringTokenizer tokenizer = new StringTokenizer(line);
  	       while (tokenizer.hasMoreTokens()) {
  	         word.set(tokenizer.nextToken());
