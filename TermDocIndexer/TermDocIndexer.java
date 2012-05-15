@@ -9,6 +9,7 @@ package org.myorg;
 
 import java.io.IOException;
 import java.util.*;
+import java.io.*;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.conf.*;
@@ -45,7 +46,10 @@ import org.apache.hadoop.fs.FileSystem;
 	     public void setup(Context context) {
 		     Configuration conf = context.getConfiguration(); 	
 		     docCount = termCount = 0;
-			
+
+		curDocId = -1;			
+         	String inputFile = job.get("mapred.input.file");
+ 	 	curDocId = docIndex.get(inputFile);
 		/* Fetch information about terms from termIndex */
 		     try {
 			     FileSystem fs = FileSystem.get(conf);
@@ -57,9 +61,9 @@ import org.apache.hadoop.fs.FileSystem;
 				     System.out.println(termIdx+" is not a file");
 
 			     BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(infile)));
-			     string curLine = "", curTerm = "";
+			     String curLine = "", curTerm = "";
 			     int curFrq = 0;			     
- 				while(curLine = br.readLine())
+ 				while( (curLine = br.readLine()) != null)
 				{
 					String tokens[] = curLine.split(" ");
 					if(tokens.length>=2)
@@ -90,8 +94,8 @@ import org.apache.hadoop.fs.FileSystem;
 				     System.out.println(docIdx+" is not a file");
 
 			     BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(infile)));
-			     string curLine = "", curDoc = "";
- 				while(curLine = br.readLine())
+			     String curLine = "", curDoc = "";
+ 				while( (curLine = br.readLine()) != null)
 				{
 						curDoc = curLine.trim();
 						docIndex.put(curDoc, docCount);
@@ -106,12 +110,6 @@ import org.apache.hadoop.fs.FileSystem;
 		     }
 		
 		System.out.println("Initiaing TermDocIndexer with "+docCount+" documents using "+termCount+" terms");
-         	String mapTaskId = conf.get("mapred.task.id");
-         	String inputFile = conf.get("mapred.input.file");
-	 	curDocId = docIndex[inputFile];
-		IntWritable[] docVector = new IntWritable[termIndex.length];
-		for(int i=0;i<termIndex.size();i++)
-			docVector[i] = 0;
 		return;
 	     }
 
@@ -147,8 +145,6 @@ import org.apache.hadoop.fs.FileSystem;
  	
 	   public void configure(JobConf job) {
          String mapTaskId = job.get("mapred.task.id");
-         String inputFile = job.get("mapred.input.file");
-	 curDocId = docIndex.get(inputFile);
        }	
 	
 	/* Main hadoop Job for TermIndexing  */	
