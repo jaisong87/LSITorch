@@ -53,7 +53,8 @@ import org.apache.hadoop.fs.FileSystem;
 
 		curDocId.set(-1);			
          	String inputFile = conf.get("mapred.input.file");
- 	 	curDocId.set(docIndex.get(inputFile));
+		
+ 	 	curDocId.set(1);//docIndex.get(inputFile));
 		/* Fetch information about terms from termIndex */
 		     try {
 			     FileSystem fs = FileSystem.get(conf);
@@ -128,9 +129,15 @@ import org.apache.hadoop.fs.FileSystem;
 	       line = line.toLowerCase();
  	       StringTokenizer tokenizer = new StringTokenizer(line);
  	       while (tokenizer.hasMoreTokens()) {
+		String curTerm = tokenizer.nextToken();
 		ArrayWritable val = new ArrayWritable(IntWritable.class);
 		IntWritable[] termFrq = new IntWritable[2];
-		termFrq[0].set(termIndex.get(tokenizer.nextToken()));
+		int termIdx = -1;
+		
+		//if(termIndex.containsValue(curTerm))
+		//	termIdx = termIndex.get(curTerm);
+
+		termFrq[0] = one;//.set(termIdx);
 		termFrq[1] = one;
 		val.set(termFrq);
  	         output.collect(curDocId, val);
@@ -176,21 +183,21 @@ import org.apache.hadoop.fs.FileSystem;
  	   public static void main(String[] args) throws Exception {
  	     JobConf conf = new JobConf(TermDocIndexer.class);
  	     conf.setJobName("TermDocIndexer");
- 	     conf.set("TermIndex","/user/aelikkottil/Dataset-2/Index/TermIndex.dat");	
- 	     conf.set("DocIndex","/user/aelikkottil/Dataset-2/Index/DocIndex.dat");	
+ 	     conf.set("TermIndex",args[0]+"/../Index/TermIndex.dat");	
+ 	     conf.set("DocIndex",args[0]+"/../Index/DocIndex.dat");	
 
  	     conf.setOutputKeyClass(IntWritable.class);
- 	     conf.setOutputValueClass(IntWritable[].class);
+ 	     conf.setOutputValueClass(ArrayWritable.class);
  	
  	     conf.setMapperClass(Map.class);
- 	     conf.setCombinerClass(Reduce.class);
+ 	     //conf.setCombinerClass(Reduce.class);
  	     conf.setReducerClass(Reduce.class);
  	
  	     conf.setInputFormat(TextInputFormat.class);
  	     conf.setOutputFormat(TextOutputFormat.class);
  	
  	    FileInputFormat.setInputPaths(conf, new Path(args[0]));
- 	    FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+ 	    FileOutputFormat.setOutputPath(conf, new Path(args[0]+"/../TDMatrix/"));
  	
  	     JobClient.runJob(conf);
  	   }

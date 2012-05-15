@@ -43,7 +43,7 @@
          * @arg values - Term Frequencies
 	 * @output - <Term, Term Frequency> collector from reduce
 	 */	
- 	   public static class reduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
+ 	   public static class Reduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
  	     public void reduce(Text key, Iterator<IntWritable> values, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
  	       int sum = 0;
  	       while (values.hasNext()) {
@@ -70,7 +70,7 @@
  	     conf.setOutputFormat(TextOutputFormat.class);
  	
  	     FileInputFormat.setInputPaths(conf, new Path(args[0]));
- 	     FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+ 	     FileOutputFormat.setOutputPath(conf, new Path(args[0]+"/../Index/"));
  	
  	     JobClient.runJob(conf);
  	   }
