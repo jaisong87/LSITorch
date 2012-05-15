@@ -7,7 +7,7 @@
  */
 package org.myorg;
 
-import org.IntArrayWritable;
+import org.myorg.IntArrayWritable;
 import java.io.IOException;
 import java.util.*;
 import java.io.*;
