@@ -1,13 +1,14 @@
 This is the design of LSIndexing project for Super Computing.
 
-All the files would be present in a distributed filesystem. Every datasets would cotain a set of documents (could be URLs, books whatever) and be present in corpus folder inside its root folder. For instance when we work on Dataset-X, it would be present in /Dataset-X/Corpus/
+All the files would be present in a distributed filesystem. Every datasets would contain a set of documents (could be URLs, books whatever) and be present in corpus folder inside its root folder. Ideally this data should be a single dump or a set of dumps so that it works well with hadoop. But currently we are accepting a large number of files. For instance when we work on Dataset-X, one text file per document would be present in /Dataset-X/Corpus/ .
 
 SCRIPT 1 : TermIndexer.java
 ------------------------------
-* We have a set of documents and the first step is to prepare it for indexing for which we need to identify indexes for docuemnts and terms.
-The script will identify the complete list of all unique terms, assign them unique indexes and dump it to a file called /Dataset-X/Index/termIndex.dat.
+* We have a set of documents and the first step is to prepare it for indexing for which we need to identify indexes for documents and terms. This step could be skipped by rather placing a TermIndex.dat corresponding to an english dictionary or a specific dictionary that is suited for the application. The TermIndexer script will perform some preprocessing and identify a set of unique terms, assign them unique indexes and dump it to a file called /Dataset-X/Index/TermIndex.dat.
 
-* EveryLine in the termIndex.dat file is of the form <term> <id>
+* EveryLine in the TermIndex.dat file is of the form <term> <termFrequency>
+
+* Frequency is used in TermIndex.dat for to support methods like TF-IDF, GF-IDF etc
 
 * Similarly all the documents in /Dataset-X/Corpus/ are assigned ids and dumped to /DataSet-X/Index/docIndex.dat
 
