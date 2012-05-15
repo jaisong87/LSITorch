@@ -19,11 +19,15 @@ import org.apache.hadoop.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+//import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+//import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.FileOutputFormat;
+
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.fs.FileSystem;
@@ -138,11 +142,30 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg values - Term Frequencies
 	 * @output - <Term, Term Frequency> collector from reduce
 	 */	
- 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, IntWritable, IntWritable, ArrayWritable> {
- 	     public void reduce(IntWritable key, Iterator<ArrayWritable> termFrq, OutputCollector<IntWritable, ArrayWritable > output, Reporter reporter) throws IOException {
-		/* Dont collect to reduce rather write straight-away to $OUTPUT_FOLDER/Index/TermIndex/ */
- 	       output.collect(key, termFrq);
- 	     }
+ 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, ArrayWritable, IntWritable, ArrayWritable> {
+		@Override
+		public void reduce(IntWritable docId, Iterator<ArrayWritable> termFrequencies,
+				OutputCollector<IntWritable, ArrayWritable> output, Reporter arg3)
+				throws IOException {
+			/* Dont collect to reduce rather write straight-away to $OUTPUT_FOLDER/Index/TermIndex/ */
+			ArrayWritable val = new ArrayWritable(IntWritable.class);
+			IntWritable[] finalTermFrq = new IntWritable[2];
+			finalTermFrq[0].set(-1);
+			finalTermFrq[1].set(0);
+			
+			int termFreq = 0;
+			
+			while(termFrequencies.hasNext())
+			{
+				String termInfo[] = termFrequencies.next().toString().split(" ");
+				termFreq+= Integer.parseInt(termInfo[1]);
+			}
+			
+			finalTermFrq[1].set(termFreq);
+			
+			val.set(finalTermFrq);
+			output.collect(docId, val);
+		}
  	   }
  	
 	   public void configure(JobConf job) {
@@ -166,8 +189,8 @@ import org.apache.hadoop.fs.FileSystem;
  	     conf.setInputFormat(TextInputFormat.class);
  	     conf.setOutputFormat(TextOutputFormat.class);
  	
- 	     FileInputFormat.setInputPaths(conf, new Path(args[0]));
- 	     FileOutputFormat.setOutputPaths(conf, new Path(args[1]));
+ 	    FileInputFormat.setInputPaths(conf, new Path(args[0]));
+ 	    FileOutputFormat.setOutputPath(conf, new Path(args[1]));
  	
  	     JobClient.runJob(conf);
  	   }
