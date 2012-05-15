@@ -7,6 +7,7 @@
  */
 package org.myorg;
 
+import org.IntArrayWritable;
 import java.io.IOException;
 import java.util.*;
 import java.io.*;
@@ -33,8 +34,16 @@ import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.fs.FileSystem;
 
 	/* Mapper<LineNumber, LineStr, Term, TermFrequency>  */	
- 	public class TermDocIndexer {	
- 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, ArrayWritable> {
+ 	public class TermDocIndexer {
+/*
+		public class IntArrayWritable extends ArrayWritable { 
+			public IntArrayWritable() { super(IntWritable.class); } 
+			public IntArrayWritable(IntWritable[] values) {
+				super(IntWritable.class, values);
+			}
+		}
+*/
+ 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, IntArrayWritable> {
  	     private final static IntWritable one = new IntWritable(1);
  	     private Text word = new Text();
  	     private HashMap<String, Integer > docIndex;
@@ -42,7 +51,7 @@ import org.apache.hadoop.fs.FileSystem;
 	     private HashMap<String, Integer > termFrq; /* Used for TF-IDF, GF-IDF */
 	     private int docCount, termCount;	
 	     private IntWritable curDocId; 	
-	     ArrayWritable docVector;// = new IntWritable[termIndex.length];
+	     IntArrayWritable docVector;// = new IntWritable[termIndex.length];
 	
 	     /* Construct the docIndex and termIndex before
 	      * continuing with the termDocIndex
@@ -123,24 +132,27 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg output -<K,V> pair for <Term, TermFrequency>
 	 * @arg reporter - 
          */	
- 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, ArrayWritable> output, Reporter reporter) throws IOException {
+ 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, IntArrayWritable> output, Reporter reporter) throws IOException {
  	       String line = value.toString();
 	       line = line.replaceAll("[^a-zA-Z0-9]+"," ");
 	       line = line.toLowerCase();
  	       StringTokenizer tokenizer = new StringTokenizer(line);
  	       while (tokenizer.hasMoreTokens()) {
 		String curTerm = tokenizer.nextToken();
-		ArrayWritable val = new ArrayWritable(IntWritable.class);
+		
+		
+		IntArrayWritable val = new IntArrayWritable();//IntWritable.class);
 		IntWritable[] termFrq = new IntWritable[2];
 		int termIdx = -1;
-		
+			
+
 		//if(termIndex.containsValue(curTerm))
 		//	termIdx = termIndex.get(curTerm);
 
 		termFrq[0] = one;//.set(termIdx);
 		termFrq[1] = one;
 		val.set(termFrq);
- 	         output.collect(curDocId, val);
+ 	         output.collect(/*curDocId*/ one, val);
  	       }
  	     }
  	   }
@@ -149,16 +161,19 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg values - Term Frequencies
 	 * @output - <Term, Term Frequency> collector from reduce
 	 */	
- 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, ArrayWritable, IntWritable, ArrayWritable> {
+ 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, IntArrayWritable, IntWritable, IntArrayWritable> {
 		@Override
-		public void reduce(IntWritable docId, Iterator<ArrayWritable> termFrequencies,
-				OutputCollector<IntWritable, ArrayWritable> output, Reporter arg3)
+		public void reduce(IntWritable docId, Iterator<IntArrayWritable> termFrequencies,
+				OutputCollector<IntWritable, IntArrayWritable> output, Reporter arg3)
 				throws IOException {
 			/* Dont collect to reduce rather write straight-away to $OUTPUT_FOLDER/Index/TermIndex/ */
-			ArrayWritable val = new ArrayWritable(IntWritable.class);
+			IntArrayWritable val = new IntArrayWritable();//IntWritable.class);
 			IntWritable[] finalTermFrq = new IntWritable[2];
-			finalTermFrq[0].set(-1);
-			finalTermFrq[1].set(0);
+	       		IntWritable one = new IntWritable(1);
+			
+			finalTermFrq[0] = one;
+			finalTermFrq[1] = one;
+			
 			
 			int termFreq = 0;
 			
@@ -168,7 +183,7 @@ import org.apache.hadoop.fs.FileSystem;
 				termFreq+= Integer.parseInt(termInfo[1]);
 			}
 			
-			finalTermFrq[1].set(termFreq);
+			//finalTermFrq[1].set(termFreq);
 			
 			val.set(finalTermFrq);
 			output.collect(docId, val);
@@ -187,7 +202,7 @@ import org.apache.hadoop.fs.FileSystem;
  	     conf.set("DocIndex",args[0]+"/../Index/DocIndex.dat");	
 
  	     conf.setOutputKeyClass(IntWritable.class);
- 	     conf.setOutputValueClass(ArrayWritable.class);
+ 	     conf.setOutputValueClass(IntArrayWritable.class);
  	
  	     conf.setMapperClass(Map.class);
  	     //conf.setCombinerClass(Reduce.class);
