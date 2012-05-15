@@ -30,15 +30,15 @@ import org.apache.hadoop.fs.FileSystem;
 
 	/* Mapper<LineNumber, LineStr, Term, TermFrequency>  */	
  	public class TermDocIndexer {	
- 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, IntWritable[]> {
+ 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, ArrayWritable> {
  	     private final static IntWritable one = new IntWritable(1);
  	     private Text word = new Text();
  	     private HashMap<String, Integer > docIndex;
  	     private HashMap<String, Integer > termIndex;
 	     private HashMap<String, Integer > termFrq; /* Used for TF-IDF, GF-IDF */
 	     private int docCount, termCount;	
-	     private int curDocId; 	
-	     IntWritable[] docVector;// = new IntWritable[termIndex.length];
+	     private IntWritable curDocId; 	
+	     ArrayWritable docVector;// = new IntWritable[termIndex.length];
 	
 	     /* Construct the docIndex and termIndex before
 	      * continuing with the termDocIndex
@@ -47,9 +47,9 @@ import org.apache.hadoop.fs.FileSystem;
 		     Configuration conf = context.getConfiguration(); 	
 		     docCount = termCount = 0;
 
-		curDocId = -1;			
-         	String inputFile = job.get("mapred.input.file");
- 	 	curDocId = docIndex.get(inputFile);
+		curDocId.set(-1);			
+         	String inputFile = conf.get("mapred.input.file");
+ 	 	curDocId.set(docIndex.get(inputFile));
 		/* Fetch information about terms from termIndex */
 		     try {
 			     FileSystem fs = FileSystem.get(conf);
@@ -118,16 +118,18 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg output -<K,V> pair for <Term, TermFrequency>
 	 * @arg reporter - 
          */	
- 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, IntWritable[]> output, Reporter reporter) throws IOException {
+ 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, ArrayWritable> output, Reporter reporter) throws IOException {
  	       String line = value.toString();
 	       line = line.replaceAll("[^a-zA-Z0-9]+"," ");
 	       line = line.toLowerCase();
  	       StringTokenizer tokenizer = new StringTokenizer(line);
  	       while (tokenizer.hasMoreTokens()) {
+		ArrayWritable val = new ArrayWritable(IntWritable.class);
 		IntWritable[] termFrq = new IntWritable[2];
-		termFrq[0] = termIndex.get(tokenizer.nextToken());
+		termFrq[0].set(termIndex.get(tokenizer.nextToken()));
 		termFrq[1] = one;
- 	         output.collect(curDocId, termFrq);
+		val.set(termFrq);
+ 	         output.collect(curDocId, val);
  	       }
  	     }
  	   }
@@ -136,8 +138,8 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg values - Term Frequencies
 	 * @output - <Term, Term Frequency> collector from reduce
 	 */	
- 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, IntWritable, IntWritable, IntWritable[]> {
- 	     public void reduce(IntWritable key, Iterator<IntWritable[]> termFrq, OutputCollector<IntWritable, IntWritable[] > output, Reporter reporter) throws IOException {
+ 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, IntWritable, IntWritable, ArrayWritable> {
+ 	     public void reduce(IntWritable key, Iterator<ArrayWritable> termFrq, OutputCollector<IntWritable, ArrayWritable > output, Reporter reporter) throws IOException {
 		/* Dont collect to reduce rather write straight-away to $OUTPUT_FOLDER/Index/TermIndex/ */
  	       output.collect(key, termFrq);
  	     }
@@ -154,8 +156,8 @@ import org.apache.hadoop.fs.FileSystem;
  	     conf.set("TermIndex","/user/aelikkottil/Dataset-2/Index/TermIndex.dat");	
  	     conf.set("DocIndex","/user/aelikkottil/Dataset-2/Index/DocIndex.dat");	
 
- 	     conf.setOutputKeyClass(Text.class);
- 	     conf.setOutputValueClass(IntWritable.class);
+ 	     conf.setOutputKeyClass(IntWritable.class);
+ 	     conf.setOutputValueClass(IntWritable[].class);
  	
  	     conf.setMapperClass(Map.class);
  	     conf.setCombinerClass(Reduce.class);
@@ -165,7 +167,7 @@ import org.apache.hadoop.fs.FileSystem;
  	     conf.setOutputFormat(TextOutputFormat.class);
  	
  	     FileInputFormat.setInputPaths(conf, new Path(args[0]));
- 	     FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+ 	     FileOutputFormat.setOutputPaths(conf, new Path(args[1]));
  	
  	     JobClient.runJob(conf);
  	   }

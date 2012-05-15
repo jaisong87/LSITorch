@@ -43,7 +43,7 @@
          * @arg values - Term Frequencies
 	 * @output - <Term, Term Frequency> collector from reduce
 	 */	
- 	   public static class Reduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
+ 	   public static class reduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
  	     public void reduce(Text key, Iterator<IntWritable> values, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
  	       int sum = 0;
  	       while (values.hasNext()) {
