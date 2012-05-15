@@ -29,12 +29,12 @@ import org.apache.hadoop.fs.FileSystem;
 
 	/* Mapper<LineNumber, LineStr, Term, TermFrequency>  */	
  	public class TermDocIndexer {	
- 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
+ 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, IntWritable[]> {
  	     private final static IntWritable one = new IntWritable(1);
  	     private Text word = new Text();
  	     private HashMap<String, Integer > docIndex;
  	     private HashMap<String, Integer > termIndex;
-	     private HashMap<String, Integer > termFrq;
+	     private HashMap<String, Integer > termFrq; /* Used for TF-IDF, GF-IDF */
 	     private int docCount, termCount;	
 	     private int curDocId; 	
 	     IntWritable[] docVector;// = new IntWritable[termIndex.length];
@@ -120,13 +120,16 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg output -<K,V> pair for <Term, TermFrequency>
 	 * @arg reporter - 
          */	
- 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, IntWritable> output, Reporter reporter) throws IOException {
+ 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, IntWritable[]> output, Reporter reporter) throws IOException {
  	       String line = value.toString();
 	       line = line.replaceAll("[^a-zA-Z0-9]+"," ");
 	       line = line.toLowerCase();
  	       StringTokenizer tokenizer = new StringTokenizer(line);
  	       while (tokenizer.hasMoreTokens()) {
- 	         output.collect(curDocId, termIndex.get(tokenizer.nextToken()));
+		IntWritable[] termFrq = new IntWritable[2];
+		termFrq[0] = termIndex.get(tokenizer.nextToken());
+		termFrq[1] = one;
+ 	         output.collect(curDocId, termFrq);
  	       }
  	     }
  	   }
@@ -136,9 +139,9 @@ import org.apache.hadoop.fs.FileSystem;
 	 * @output - <Term, Term Frequency> collector from reduce
 	 */	
  	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, IntWritable, IntWritable, IntWritable[]> {
- 	     public void reduce(IntWritable key, Iterator<IntWritable> values, OutputCollector<IntWritable, IntWritable[] > output, Reporter reporter) throws IOException {
+ 	     public void reduce(IntWritable key, Iterator<IntWritable[]> termFrq, OutputCollector<IntWritable, IntWritable[] > output, Reporter reporter) throws IOException {
 		/* Dont collect to reduce rather write straight-away to $OUTPUT_FOLDER/Index/TermIndex/ */
- 	       //output.collect(key, docVector);
+ 	       output.collect(key, termFrq);
  	     }
  	   }
  	
