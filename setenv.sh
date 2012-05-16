@@ -4,3 +4,6 @@ export HADOOP_INP=/Dataset-2/Corpus/
 export CLUSTERS=3
 export MAX_ITER=6
 export REDUCED_RANK=400
+export INP_TYPE=Plain-Text
+export TERM_COUNT=10
+export MAT_TYPE=FRQ

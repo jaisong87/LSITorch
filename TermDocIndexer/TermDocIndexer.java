@@ -98,7 +98,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 			     BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(infile)));
 			     String curLine = "", curTerm = "";
 			     int curFrq = 0;			     
- 				while( (curLine = br.readLine()) != null)
+ 				while( (curLine = br.readLine()) != null && termCount < maxTermCount )
 				{
 					String tokens[] = curLine.split("\t");
 				//System.out.println(curLine+" "+tokens.length);
@@ -228,13 +228,13 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 			int[] finalTermFrq = new int[2];
 		
 		Configuration conf = context.getConfiguration(); 	
-		int termCount = 10000; /* Default Value */
+		String termCountString = conf.get("TermCount");
+		int termCount = /*10000; 
 	
   	 	conf.setIfUnset("TermCount", "10000");		
-		String termCountString = conf.get("TermCount");
 				
 		if(termCountString != null)
-			termCount = Integer.parseInt(termCountString);
+			termCount =*/ Integer.parseInt(termCountString);
 		
 
 		System.out.println("Reducer Conf : Working on TermDocIndexer with "+conf.get("DocCount")+" documents using "+conf.get("TermCount")+" terms");
@@ -273,26 +273,26 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
  	
 	
 	/* Main hadoop Job for TermIndexing  */	
- 	   public static void main(String[] args) throws Exception {
- 		   Configuration conf = new Configuration();
- 		   conf.set("TermIndex",args[0]+"/../Index/TermIndex.dat");	
-  	       conf.set("DocIndex",args[0]+"/../Index/DocIndex.dat");	
-	       conf.set("TermCount", "1000");  		
- 
- 		   //JobConf conf = new JobConf(TermDocIndexer.class);
-  	       Job job = new Job(conf, "TermDocIndexing Job");
-  	    
- 	     job.setOutputKeyClass(IntWritable.class);
- 	     job.setOutputValueClass(Text.class);
- 	
-	     job.setJarByClass(TermDocIndexer.class);	
- 	     job.setMapperClass(Map.class);
- 	     job.setReducerClass(Reduce.class);
- 	
- 	    FileInputFormat.setInputPaths(job, new Path(args[0]));
- 	    FileOutputFormat.setOutputPath(job, new Path(args[0]+"/../TDMatrix/"));
- 	
- 	    job.waitForCompletion(true);
- 	   }
+	   public static void main(String[] args) throws Exception {
+		   Configuration conf = new Configuration();
+		   conf.set("TermIndex",args[0]+"/../Index/TermIndex.dat");	
+		   conf.set("DocIndex",args[0]+"/../Index/DocIndex.dat");	
+		   conf.set("TermCount", args[1]);  		
+
+		   //JobConf conf = new JobConf(TermDocIndexer.class);
+		   Job job = new Job(conf, "TermDocIndexing Job");
+
+		   job.setOutputKeyClass(IntWritable.class);
+		   job.setOutputValueClass(Text.class);
+
+		   job.setJarByClass(TermDocIndexer.class);	
+		   job.setMapperClass(Map.class);
+		   job.setReducerClass(Reduce.class);
+
+		   FileInputFormat.setInputPaths(job, new Path(args[0]));
+		   FileOutputFormat.setOutputPath(job, new Path(args[0]+"/../TDMatrix/"));
+
+		   job.waitForCompletion(true);
+	   }
 
  	}
