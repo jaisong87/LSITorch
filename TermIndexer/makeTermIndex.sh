@@ -6,8 +6,10 @@ $HADOOP_HOME/bin/hadoop jar ../bin/TermIndexer.jar org.myorg.TermIndexer $HADOOP
 $HADOOP_HOME/bin/hadoop fs -cat "$HADOOP_OUT/part*" > tmpIndex
 $HADOOP_HOME/bin/hadoop fs -rm "$HADOOP_OUT/*" 
 $HADOOP_HOME/bin/hadoop fs -rmr "$HADOOP_OUT/*" 
-$HADOOP_HOME/bin/hadoop fs -put tmpIndex "$HADOOP_OUT/TermIndex.dat"
+sort -r -k 2 -n tmpIndex > tmpIndex2
+$HADOOP_HOME/bin/hadoop fs -put tmpIndex2 "$HADOOP_OUT/TermIndex.dat"
 rm tmpIndex
+rm tmpIndex2
 $HADOOP_HOME/bin/hadoop fs -ls $HADOOP_INP > tmpIndex2
 awk < tmpIndex2 '{print $8}' > DocIndex.dat
 rm tmpIndex2
