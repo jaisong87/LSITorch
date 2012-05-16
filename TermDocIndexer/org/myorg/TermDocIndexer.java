@@ -43,7 +43,7 @@ import org.apache.hadoop.fs.FileSystem;
 			}
 		}
 */
- 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, IntArrayWritable> {
+ 	   public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, Text> {
  	     private final static IntWritable one = new IntWritable(1);
  	     private Text word = new Text();
  	     private HashMap<String, Integer > docIndex;
@@ -132,28 +132,28 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg output -<K,V> pair for <Term, TermFrequency>
 	 * @arg reporter - 
          */	
- 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, IntArrayWritable> output, Reporter reporter) throws IOException {
+ 	     public void map(LongWritable key, Text value, OutputCollector<IntWritable, Text> output, Reporter reporter) throws IOException {
  	       String line = value.toString();
 	       line = line.replaceAll("[^a-zA-Z0-9]+"," ");
 	       line = line.toLowerCase();
  	       StringTokenizer tokenizer = new StringTokenizer(line);
- 	       while (tokenizer.hasMoreTokens()) {
-		String curTerm = tokenizer.nextToken();
-		
-		
-		IntArrayWritable val = new IntArrayWritable();//IntWritable.class);
-		IntWritable[] termFrq = new IntWritable[2];
-		int termIdx = -1;
-			
+ 	       
+	       while (tokenizer.hasMoreTokens()) {
+		       String curTerm = tokenizer.nextToken();
 
-		//if(termIndex.containsValue(curTerm))
-		//	termIdx = termIndex.get(curTerm);
+		       int[] termFrq = new int[2];
+		       int termIdx = -1;
 
-		termFrq[0] = one;//.set(termIdx);
-		termFrq[1] = one;
-		val.set(termFrq);
- 	         output.collect(/*curDocId*/ one, val);
- 	       }
+			System.out.println(curDocId+" "+curTerm);
+		       //if(termIndex.containsValue(curTerm) == true)
+		       //termIdx = termIndex.get(curTerm);
+
+		       termFrq[0] = termIdx;//.set(termIdx);
+		       termFrq[1] = 1;
+		       String ans = termFrq[0]+" "+termFrq[1];
+		       Text ans1 = new Text(ans);
+		       output.collect( curDocId, ans1 );
+	       }
  	     }
  	   }
  	
@@ -161,18 +161,16 @@ import org.apache.hadoop.fs.FileSystem;
          * @arg values - Term Frequencies
 	 * @output - <Term, Term Frequency> collector from reduce
 	 */	
- 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, IntArrayWritable, IntWritable, IntArrayWritable> {
+ 	   public static class Reduce extends MapReduceBase implements Reducer<IntWritable, Text, IntWritable, Text> {
 		@Override
-		public void reduce(IntWritable docId, Iterator<IntArrayWritable> termFrequencies,
-				OutputCollector<IntWritable, IntArrayWritable> output, Reporter arg3)
+		public void reduce(IntWritable docId, Iterator<Text> termFrequencies,
+				OutputCollector<IntWritable, Text> output, Reporter arg3)
 				throws IOException {
 			/* Dont collect to reduce rather write straight-away to $OUTPUT_FOLDER/Index/TermIndex/ */
-			IntArrayWritable val = new IntArrayWritable();//IntWritable.class);
-			IntWritable[] finalTermFrq = new IntWritable[2];
-	       		IntWritable one = new IntWritable(1);
+			int[] finalTermFrq = new int[2];
 			
-			finalTermFrq[0] = one;
-			finalTermFrq[1] = one;
+			finalTermFrq[0] = -1;//one;
+			finalTermFrq[1] = 0;//one;
 			
 			
 			int termFreq = 0;
@@ -180,13 +178,13 @@ import org.apache.hadoop.fs.FileSystem;
 			while(termFrequencies.hasNext())
 			{
 				String termInfo[] = termFrequencies.next().toString().split(" ");
-				termFreq+= Integer.parseInt(termInfo[1]);
+				if(termInfo.length>=2)
+					termFreq+= Integer.parseInt(termInfo[1]);
 			}
 			
-			//finalTermFrq[1].set(termFreq);
-			
-			val.set(finalTermFrq);
-			output.collect(docId, val);
+			//val.set(finalTermFrq);
+			String val = finalTermFrq[0]+" "+finalTermFrq[1];
+			output.collect(docId, new Text(val));
 		}
  	   }
  	
