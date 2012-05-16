@@ -1,0 +1,2 @@
+javac -classpath $HADOOP_HOME/lib/commons-cli-1.2.jar:$HADOOP_HOME/hadoop-0.20.2-core.jar:$PWD/Kmeans/Jama-1.0.2.jar  -d Kmeans/ Kmeans/src/Kmeans.java Kmeans/src/MakeCluster/MakeClusterMapper.java Kmeans/src/MakeCluster/MakeClusterReducer.java Kmeans/src/Clustering/ClusteringMapper.java Kmeans/src/Clustering/ClusteringReducer.java Kmeans/src/CombineCentroids/CombineCentroidsMapper.java Kmeans/src/CombineCentroids/CombineCentroidsReducer.java
+jar -cvf bin/Kmeans.jar -C Kmeans/ .

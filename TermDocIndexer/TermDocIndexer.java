@@ -228,22 +228,20 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 			int[] finalTermFrq = new int[2];
 		
 		Configuration conf = context.getConfiguration(); 	
-		int termCount = 1000;
-
-		/*
-  	 	conf.setIfUnset("TermCount", "1000");		
+		int termCount = 10000; /* Default Value */
+	
+  	 	conf.setIfUnset("TermCount", "10000");		
 		String termCountString = conf.get("TermCount");
 				
 		if(termCountString != null)
 			termCount = Integer.parseInt(termCountString);
-		*/
+		
 
 		System.out.println("Reducer Conf : Working on TermDocIndexer with "+conf.get("DocCount")+" documents using "+conf.get("TermCount")+" terms");
-			int[] docVector = new int[termCount];			
+			float[] docVector = new float[termCount];			
 
 			int termFreq = 0;
 
-	//		while(termFrequencies.hasNext())
 		for (Text termInformation : termFrequencies)
 			{
 				String termInfo[] = termInformation.toString().split("\t");
@@ -260,7 +258,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 				}
 			}
 			
-			//val.set(finalTermFrq);
 			String val = "";
 			for(int i=0;i<termCount;i++)
 				val+=docVector[i]+"\t";
@@ -290,11 +287,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
  	
 	     job.setJarByClass(TermDocIndexer.class);	
  	     job.setMapperClass(Map.class);
- 	     //conf.setCombinerClass(Reduce.class);
  	     job.setReducerClass(Reduce.class);
- 	
- 	    // job.setInputFormat(TextInputFormat.class);
- 	    // conf.setOutputFormat(TextOutputFormat.class);
  	
  	    FileInputFormat.setInputPaths(job, new Path(args[0]));
  	    FileOutputFormat.setOutputPath(job, new Path(args[0]+"/../TDMatrix/"));
