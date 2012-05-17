@@ -29,17 +29,15 @@ import Jama.SingularValueDecomposition;
 		       int rowSize = list.get(0).split("\t").length-1;       
 		       if (coloumnSize == 0) {
 			       System.out.println("Cannot perform LSI because '0' elements in this Cluster");
-			       return;
 		       }
 	
 		/* Need to look into this condition*/
-		       if (rowSize <= coloumnSize) { 
+		       else if (rowSize <= coloumnSize) { 
 			       System.out.println("rowSize =" + rowSize);
 			       System.out.println("coloumnSize =" + coloumnSize);
 			       System.out.println("Cannot perform LSI because rowsize < coloumnsize in this Cluster");
-			       return;
 		       }
-
+			else {
        double [][] arr = new double[rowSize][coloumnSize];
        String[] Ids = new String[coloumnSize];
        
@@ -51,10 +49,10 @@ import Jama.SingularValueDecomposition;
        while (ListIter.hasNext()) {
     	   String tmp = ListIter.next();
     	   StringTokenizer itr = new StringTokenizer(tmp);
-    	   Ids[countCol] = itr.nextToken();
+    	   Ids[countCol] = itr.nextToken("\t");
     	   
            while (itr.hasMoreTokens()) {
-        	   arr[countRow][countCol] = Double.parseDouble(itr.nextToken());
+        	   arr[countRow][countCol] = Double.parseDouble(itr.nextToken("\t"));
                //context.write(word, one);
                countRow++;
              } countRow=0;
@@ -71,7 +69,7 @@ import Jama.SingularValueDecomposition;
         A = U.times(S);
         A = A.times(V.transpose());
         
-       
+       		
        /*for (int i=0;i<rowSize;i++) {
     	   for (int j=0;j<coloumnSize;j++){
                System.out.print(arr[i][j] + " ");
@@ -81,7 +79,7 @@ import Jama.SingularValueDecomposition;
        for (int j=0;j<coloumnSize;j++){
             System.out.print(Ids[j] + " ");
        } */  
-       
+       }
        
     }
   }

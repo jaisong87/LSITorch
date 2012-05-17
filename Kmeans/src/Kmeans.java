@@ -49,7 +49,7 @@ public class Kmeans {
       job.waitForCompletion(true);
       
       /*Job to make the next centroid file*/
-  	  System.out.println("Making the new Centroid FIle");
+      System.out.println("Making the new Centroid FIle");
       Job job2 = new Job(conf, "Make Centroid");
       job2.setJarByClass(Kmeans.class);
       job2.setMapperClass(CombineCentroidsMapper.class);
@@ -67,7 +67,7 @@ public class Kmeans {
     }
     /* Job to make the final Cluster */
 	System.out.println("Final MapReduce Job Running");
-/*
+
     conf.set("CentroidFile", otherArgs[3]+i+"/part-r-00000");    
     Job job3 = new Job(conf, "Clustering Job");
     job3.setJarByClass(Kmeans.class);
@@ -81,7 +81,7 @@ public class Kmeans {
     FileInputFormat.addInputPath(job3, new Path(otherArgs[0]));
     FileOutputFormat.setOutputPath(job3, new Path(otherArgs[1]+i));
     job3.waitForCompletion(true);
-*/
+
     /*END*/
   }
 }
