@@ -68,8 +68,11 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
  	     private HashMap<String, Integer > docIndex  = new HashMap<String, Integer>();
  	     private HashMap<String, Integer > termIndex = new HashMap<String, Integer>();
 	     private HashMap<String, Integer > termFrq   = new HashMap<String, Integer>(); /* Used for TF-IDF, GF-IDF */
+	     private HashMap<String, Double >   idf       = new HashMap<String, Double>(); /* Used for TF-IDF, GF-IDF */
+	     
 	     private int docCount = 0, termCount =0;	
 	     private IntWritable curDocId = new IntWritable(-100); 	
+	     String tdMat = "FRQ";
 
 		public Map()
 			{
@@ -82,44 +85,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 		     Configuration conf = context.getConfiguration(); 	
 		     docCount = termCount = 0;
 		int maxTermCount = Integer.parseInt(conf.get("TermCount"));
-		curDocId.set(-1);			
-		/* Fetch information about terms from termIndex */
-		System.out.println("Trying to make termIndex");
-		     try {
-			     FileSystem fs = FileSystem.get(conf);
-			     String termIdx = conf.get("TermIndex");	
-			     Path infile = new Path(termIdx); /* TermIndex File*/
-			     if (!fs.exists(infile))
-				     System.out.println(termIdx+" does not exist");
-			     if (!fs.isFile(infile))
-				     System.out.println(termIdx+" is not a file");
-		System.out.println("----Making termIndex-----");
-
-			     BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(infile)));
-			     String curLine = "", curTerm = "";
-			     int curFrq = 0;			     
- 				while( (curLine = br.readLine()) != null && termCount < maxTermCount )
-				{
-					String tokens[] = curLine.split("\t");
-				//System.out.println(curLine+" "+tokens.length);
-					if(tokens.length>=2)
-						{
-						curTerm = tokens[0];
-						curFrq = Integer.parseInt(tokens[1]);
-						termFrq.put(curTerm, curFrq);
-						termIndex.put(curTerm , termCount);
-						System.out.println(termCount+" "+curTerm+" "+curFrq);
-						termCount++;
-						}
-				}
-			     br.close();
-
-		     } catch (IOException e) {
-			     // TODO Auto-generated catch block
-			     System.out.println("Exception in Creating the FileSystem object in Mapper");
-			     e.printStackTrace();
-		     }
-
+		curDocId.set(-1);
+		
+		tdMat = conf.get("MatType").trim();
 		/* Fetch information about documents from docIndex */
 		     try {
 			   System.out.println("----Making DocIndex-----");
@@ -155,6 +123,50 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 		
 		System.out.println("Initiaing TermDocIndexer with "+docCount+" documents using "+termCount+" terms");
 	
+
+			
+		/* Fetch information about terms from termIndex */
+		System.out.println("Trying to make termIndex");
+		     try {
+			     FileSystem fs = FileSystem.get(conf);
+			     String termIdx = conf.get("TermIndex");	
+			     Path infile = new Path(termIdx); /* TermIndex File*/
+			     if (!fs.exists(infile))
+				     System.out.println(termIdx+" does not exist");
+			     if (!fs.isFile(infile))
+				     System.out.println(termIdx+" is not a file");
+		System.out.println("----Making termIndex-----");
+
+			     BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(infile)));
+			     String curLine = "", curTerm = "";
+			     int curFrq = 0;			     
+ 				while( (curLine = br.readLine()) != null && termCount < maxTermCount )
+				{
+					String tokens[] = curLine.split("\t");
+				//System.out.println(curLine+" "+tokens.length);
+					if(tokens.length>=2)
+						{
+						curTerm = tokens[0];
+						curFrq = Integer.parseInt(tokens[1]);
+						float dc = Float.parseFloat(tokens[2]);
+						float termRatio = dc/docCount; 
+						double curIdf = Math.log(termRatio);
+						if(dc == 0) curIdf = -200;
+						System.out.println(" IDF for "+curTerm+" is "+curIdf+" made from "+termRatio+" on "+dc+"/"+docCount);
+						idf.put(curTerm, curIdf);
+						termFrq.put(curTerm, curFrq);
+						termIndex.put(curTerm , termCount);
+						System.out.println(termCount+" "+curTerm+" "+curFrq);
+						termCount++;
+						}
+				}
+			     br.close();
+
+		     } catch (IOException e) {
+			     // TODO Auto-generated catch block
+			     System.out.println("Exception in Creating the FileSystem object in Mapper");
+			     e.printStackTrace();
+		     }
 		FileSplit fileSplit = (FileSplit)context.getInputSplit();
       		String inputFile = fileSplit.getPath().getName();
 		System.out.println("===========INPUT-FILE : "+inputFile+" =================");		
@@ -192,15 +204,29 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
  	       
 	       while (tokenizer.hasMoreTokens()) {
 		       String curTerm = tokenizer.nextToken();
-			//System.out.println("curTerm is "+curTerm);
-			//System.out.println("DocId is :"+curDocId.get());
-		       
 		       int termIdx = -1;
+		       double termWt = 1.0;		
 
 		       if(termIndex.containsKey(curTerm) == true)
 		       		termIdx = termIndex.get(curTerm);
+	
+			System.out.println("TD - Matrix type is "+tdMat);
+		
+			if(tdMat.equals("TFIDF"))
+			{	
+			if(idf.containsKey(curTerm) == true)
+				termWt = idf.get(curTerm);
+			System.out.println("Using TFIDF termWt "+termWt);
+			}
+			else if(tdMat.equals("TF"))
+			{
+				termWt = 1;
+			}
+			else {
+				termWt = 2;			
+			}
 
-		       String ans = termIdx+"\t1";
+		        String ans = termIdx+"\t"+termWt;
 			System.out.println("Emit :"+ curDocId.get()+" => "+ans);
 		       Text ans1 = new Text(ans);
 
@@ -226,7 +252,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 				throws IOException {
 			/* Dont collect to reduce rather write straight-away to $OUTPUT_FOLDER/Index/TermIndex/ */
 			int[] finalTermFrq = new int[2];
-		
+		boolean mtTypeIncdence = false;	
 		Configuration conf = context.getConfiguration(); 	
 		String termCountString = conf.get("TermCount");
 		int termCount = /*10000; 
@@ -249,18 +275,30 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 				if(termInfo.length>=2)
 				{
 					int curTermIdx = Integer.parseInt(termInfo[0]);
-					int curTermFrq = Integer.parseInt(termInfo[1]);
+					float curTermWt = Float.parseFloat(termInfo[1]);
+					if(curTermWt == 2)
+						mtTypeIncdence = true;
 					if(curTermIdx<termCount && curTermIdx>=0)
-						docVector[curTermIdx] += curTermFrq;
+						docVector[curTermIdx] += curTermWt;
 					else {
-						System.out.println("ERROR !! - TermIdx "+curTermIdx+" with frequency "+curTermFrq+" out of range");
+						System.out.println("ERROR !! - TermIdx "+curTermIdx+" with frequency "+curTermWt+" out of range");
 					}
 				}
 			}
 			
-			String val = "";
-			for(int i=0;i<termCount;i++)
+		String val = "";
+		for(int i=0;i<termCount;i++)
+		{
+			if(mtTypeIncdence==true)
+			{
+				if(docVector[i]!=0)
+					val+="1\t";
+				else val+="0\t";
+			}
+			else {	
 				val+=docVector[i]+"\t";
+			}
+		}
 			try {
 				context.write(docId, new Text(val));
 			} catch (InterruptedException e) {
@@ -278,6 +316,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 		   conf.set("TermIndex",args[0]+"/../Index/TermIndex.dat");	
 		   conf.set("DocIndex",args[0]+"/../Index/DocIndex.dat");	
 		   conf.set("TermCount", args[1]);  		
+		   conf.set("MatType", args[2]);			
 
 		   //JobConf conf = new JobConf(TermDocIndexer.class);
 		   Job job = new Job(conf, "TermDocIndexing Job");
