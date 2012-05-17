@@ -16,13 +16,13 @@ import MakeCluster.MakeClusterReducer;
 
 
 
-public class Kmeans {
+public class LSIndexer {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-    if (otherArgs.length != 5) {
-      System.err.println("Usage: wordcount <in> <out> <NoOfClusters K> <CentroidFile> <MaxIterations>");
+    if (otherArgs.length != 6) {
+      System.err.println("Usage: wordcount <in> <out> <NoOfClusters K> <CentroidFile> <MaxIterations> <ReducedRank>");
       System.exit(2);
     }
     
@@ -36,7 +36,7 @@ public class Kmeans {
       /* Cluster the inputs */
       conf.set("CentroidFile", otherArgs[3]+i+"/part-r-00000");    
       Job job = new Job(conf, "Clustering Job");
-      job.setJarByClass(Kmeans.class);
+      job.setJarByClass(LSIndexer.class);
       job.setMapperClass(ClusteringMapper.class);
       job.setReducerClass(ClusteringReducer.class);
       job.setOutputKeyClass(IntWritable.class);
@@ -51,7 +51,7 @@ public class Kmeans {
       /*Job to make the next centroid file*/
       System.out.println("Making the new Centroid FIle");
       Job job2 = new Job(conf, "Make Centroid");
-      job2.setJarByClass(Kmeans.class);
+      job2.setJarByClass(LSIndexer.class);
       job2.setMapperClass(CombineCentroidsMapper.class);
       job2.setReducerClass(CombineCentroidsReducer.class);
       job2.setOutputKeyClass(IntWritable.class);
@@ -67,10 +67,11 @@ public class Kmeans {
     }
     /* Job to make the final Cluster */
 	System.out.println("Final MapReduce Job Running");
-
+    
+    conf.set("ReducedRank", otherArgs[5]);
     conf.set("CentroidFile", otherArgs[3]+i+"/part-r-00000");    
     Job job3 = new Job(conf, "Clustering Job");
-    job3.setJarByClass(Kmeans.class);
+    job3.setJarByClass(LSIndexer.class);
     job3.setMapperClass(MakeClusterMapper.class);
     job3.setReducerClass(MakeClusterReducer.class);
     job3.setOutputKeyClass(IntWritable.class);

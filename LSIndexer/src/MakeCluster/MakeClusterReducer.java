@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.StringTokenizer;
-
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -58,27 +58,44 @@ import Jama.SingularValueDecomposition;
              } countRow=0;
              countCol++;  
        }
-       
-	Matrix A = new Matrix(arr); 
-        SingularValueDecomposition SVD = new SingularValueDecomposition(A);
-        
-        Matrix S = SVD.getS();
-        Matrix U = SVD.getU();
-        Matrix V = SVD.getV();
-        //decrease the rank of S here for Latent Semantic Indexing
-        A = U.times(S);
-        A = A.times(V.transpose());
-        
-       		
-       /*for (int i=0;i<rowSize;i++) {
-    	   for (int j=0;j<coloumnSize;j++){
-               System.out.print(arr[i][j] + " ");
-    	   }   System.out.println();
+
+       Matrix A = new Matrix(arr);
+       SingularValueDecomposition SVD = new SingularValueDecomposition(A);
+
+       Matrix S = SVD.getS();
+       Matrix U = SVD.getU();
+       Matrix V = SVD.getV();
+
+       Configuration conf = context.getConfiguration();
+       int reducedRank = Integer.parseInt(conf.get("ReducedRank"));
+       int rank= S.rank();
+       int toreduce = 40; //default no specific reason why I gave 40
+       if((6*rank)/10 < reducedRank ) {
+	       toreduce = (6*rank)/10;
        }
-       
-       for (int j=0;j<coloumnSize;j++){
-            System.out.print(Ids[j] + " ");
-       } */  
+       else {
+	       toreduce = reducedRank;
+       }
+
+       //Reducing rank
+       S = S.getMatrix(0, toreduce-1, 0, toreduce-1);
+       U = U.getMatrix(0, U.getRowDimension()-1, 0, toreduce-1);
+       V = V.getMatrix(0, V.getRowDimension()-1, 0, toreduce-1);
+
+       A = U.times(S);
+       A = A.times(V.transpose());
+
+       //Convert back to array to print
+       arr = A.getArray();
+       String val = "";
+       for (int i=0;i<coloumnSize;i++) {
+	       val = Ids[i]+" ";
+	       for (int j=0;j<rowSize;j++) {
+		       val += Double.toString(arr[j][i]) + " ";
+	       }
+	       context.write(new Text(val), null);
+       }
+
        }
        
     }

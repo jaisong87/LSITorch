@@ -7,4 +7,4 @@ $HADOOP_HOME/bin/hadoop fs -copyFromLocal tmp2 "$HADOOP_INP/../Centroid0/part-r-
 rm tmp
 rm tmp2
 echo "Generating LSIndex from $HADOOP_INP/../TDMatrix/ to $LSI_INDEX"
-$HADOOP_HOME/bin/hadoop jar ../bin/Kmeans.jar Kmeans "$HADOOP_INP/../TDMatrix/" $LSI_INDEX $CLUSTERS $CENTROID_DIR $MAX_ITER 
+$HADOOP_HOME/bin/hadoop jar ../bin/LSIndexer.jar LSIndexer "$HADOOP_INP/../TDMatrix/" $LSI_INDEX $CLUSTERS $CENTROID_DIR $MAX_ITER $REDUCED_RANK 
