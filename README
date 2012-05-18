@@ -1,2 +1,25 @@
-This is an implementation for a distributed information retrieval system and search engine using Latent semantic indexing.
+This is an implementation for a distributed information retrieval system.
+
+The code contains the following:
+a) Term Indexer
+b) Term Doc Indexer( forms term-doc matrices)
+c) LSI Indexer ( new doc vectors are made)
+
+
+HOW TO RUN THE CODE
+------------------------
+1) Refer to setenv.sh ( it has comments explaining the options )
+Set the options and later run
+"source setenv.sh"
+
+2) To check the settings run "sh getenv.sh"
+
+3) To compile the code (if required) , run makeLSIndexer.sh ,makeTermDocIndexer.sh ,makeTermIndexer.sh [ these are quick shell scripts written for convenience ]
+
+4) Term Indexing - After setting the environment go to TermIndexing/ and run "sh makeTermIndex.sh" to make the term index. Similarly "sh cleanTermIndex.sh" will remove all the current term indexing from hdfs
+
+5) TermDocIndexing - To make term document index, go to TermDocIndexer and run "sh makeTermDocIndexer.sh" to make the term document index and similarly run "sh cleanTermDocIndex.sh" to remove term-document matrix and create a new one of may be a different type
+
+6) LSIndex - Go to LSIndex/ and run "sh makeLSIndex.sh" to make the latent semantic index. Once the ondexing is done go to $HADOOP_INP/../LSIndex$i where i is the number of iterations. For example if the number of iterations is 243, the folder would be $HADOOP_INP/../LSIndex243 where all the document vectors are stored. There would be one file per cluster.
+
 
